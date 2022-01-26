@@ -388,26 +388,11 @@ fileprivate extension String {
 }
 
 open class ServerInfoStorage {
-    public static let shared = ServerInfoStorage()
+    public static var commonUrl: URL?
+    public static var epsUrl: URL?
     
-    public var commonUrl: URL?
-    public var epsUrl: URL?
-    
-    init() {
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(setNewValues),
-                                               name: Notification.Name(rawValue: "kServerSideSetNewServer"),
-                                               object: nil)
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
-    @objc func setNewValues(notification: Notification) {
-        if let commonUrl = notification.userInfo?["commonUrl"] as? URL, let epsUrl = notification.userInfo?["epsUrl"] as? URL {
-            self.commonUrl = commonUrl
-            self.epsUrl = epsUrl
-        }
+    public static func setNewServers(commonUrl: URL?, epsUrl: URL?) {
+        self.commonUrl = commonUrl
+        self.epsUrl = epsUrl
     }
 }
