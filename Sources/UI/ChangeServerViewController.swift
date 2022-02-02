@@ -148,8 +148,8 @@ class ChangeServerViewController: UIViewController {
     func configureProdButton() {
         if  let commonUrl = URL(string: prodCommonUrlString),
             let epsUrl = URL(string: prodEpsUrlString),
-            ServerInfoStorage.shared.commonUrl?.absoluteString == commonUrl.absoluteString &&
-            ServerInfoStorage.shared.epsUrl?.absoluteString == epsUrl.absoluteString
+            ServerInfoStorage.commonUrl?.absoluteString == commonUrl.absoluteString &&
+            ServerInfoStorage.epsUrl?.absoluteString == epsUrl.absoluteString
         {
             prodServerButton.setTitle("Currently at prod", for: .normal, with: .white, on: mainColor)
             prodServerButton.isEnabled = false
@@ -162,8 +162,8 @@ class ChangeServerViewController: UIViewController {
     func configureDemoButton() {
         if  let commonUrl = URL(string: demoCommonUrlString),
             let epsUrl = URL(string: demoEpsUrlString),
-            ServerInfoStorage.shared.commonUrl?.absoluteString == commonUrl.absoluteString &&
-            ServerInfoStorage.shared.epsUrl?.absoluteString == epsUrl.absoluteString
+            ServerInfoStorage.commonUrl?.absoluteString == commonUrl.absoluteString &&
+            ServerInfoStorage.epsUrl?.absoluteString == epsUrl.absoluteString
         {
             demoServerButton.setTitle("Currently at demo", for: .normal, with: .white, on: mainColor)
             demoServerButton.isEnabled = false
@@ -193,7 +193,7 @@ class ChangeServerViewController: UIViewController {
         if commonIsValid() && epsIsEmptyOrValid() {
             if let epsText = epsUrlTextfield.text?.lowercased(), !epsText.isEmpty {
                 if let commonUrl = URL(string: commonUrlTextfield.text ?? ""), let epsUrl = URL(string: epsUrlTextfield.text?.lowercased() ?? "") {
-                    if commonUrl.absoluteString == ServerInfoStorage.shared.commonUrl?.absoluteString && epsUrl.absoluteString == ServerInfoStorage.shared.epsUrl?.absoluteString {
+                    if commonUrl.absoluteString == ServerInfoStorage.commonUrl?.absoluteString && epsUrl.absoluteString == ServerInfoStorage.epsUrl?.absoluteString {
                         failedToSwitch(to: .custom)
                     } else {
                         swichTo(common: commonUrl, eps: epsUrl)
@@ -296,8 +296,8 @@ class ChangeServerViewController: UIViewController {
     
     func getCurrentServer() -> String {
         let defaultString = "not determined"
-        let serverString = ServerInfoStorage.shared.commonUrl?.absoluteString ?? defaultString
-        let epsString = ServerInfoStorage.shared.epsUrl?.absoluteString ?? defaultString
+        let serverString = ServerInfoStorage.commonUrl?.absoluteString ?? defaultString
+        let epsString = ServerInfoStorage.epsUrl?.absoluteString ?? defaultString
         return "Common: \(serverString)\nEPS: \(epsString)"
     }
     
