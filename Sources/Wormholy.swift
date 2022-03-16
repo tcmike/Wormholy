@@ -11,26 +11,21 @@ import UIKit
 
 public class Wormholy: NSObject
 {
-    @available(*, deprecated, renamed: "ignoredHosts")
-    @objc public static var blacklistedHosts: [String] {
-        get { return CustomHTTPProtocol.ignoredHosts }
-        set { CustomHTTPProtocol.ignoredHosts = newValue }
-    }
-
+    
     /// Hosts that will be ignored from being recorded
     ///
-    @objc public static var ignoredHosts: [String] {
+    @objc public static var ignoredHosts: Set<String> {
         get { return CustomHTTPProtocol.ignoredHosts }
         set { CustomHTTPProtocol.ignoredHosts = newValue }
     }
-  
+    
     /// Limit the logging count
     ///
     @objc public static var limit: NSNumber? {
         get { Storage.limit }
         set { Storage.limit = newValue }
     }
-
+    
     @objc public static func swiftyLoad() {
         NotificationCenter.default.addObserver(forName: fireWormholy, object: nil, queue: nil) { (notification) in
             Wormholy.presentWormholyFlow()
@@ -38,7 +33,7 @@ public class Wormholy: NSObject
     }
     
     @objc public static func swiftyInitialize() {
-        if self == Wormholy.self{
+        if self == Wormholy.self {
             Wormholy.enable(true)
         }
     }
@@ -121,14 +116,10 @@ public class Wormholy: NSObject
     }()
 }
 
-extension Wormholy: SelfAware {
+extension Wormholy {
     
     static func awake() {
-        initializeAction
-    }
-    
-    private static let initializeAction: Void = {
         swiftyLoad()
         swiftyInitialize()
-    }()
+    }
 }
