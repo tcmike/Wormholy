@@ -71,6 +71,7 @@ class BorderedButton: UIButton {
 }
 
 class ChangeServerViewController: UIViewController {
+    let scrollView = UIScrollView()
     let currentServerLabel = UILabel()
     let firstDivider = UIView()
     let prodServerButton = BorderedButton()
@@ -143,6 +144,23 @@ class ChangeServerViewController: UIViewController {
         //custon button
         customServerButton.setTitle("Save", for: .normal, with: .white, on: secondaryColor)
         customServerButton.addTarget(self, action: #selector(switchToCustom), for: .touchUpInside)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func keyboardWillShow(notification: NSNotification) {
+        if let keyboardHeight = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect)?.height {
+            scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: keyboardHeight, right: 0)
+        }
+    }
+
+    @objc func keyboardWillHide(notification: NSNotification) {
+        scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
     }
     
     func configureProdButton() {
@@ -302,6 +320,25 @@ class ChangeServerViewController: UIViewController {
     }
     
     func placeSubviews() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        
+        if #available(iOS 11.0, *) {
+            NSLayoutConstraint.activate([
+                scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+            ])
+        } else {
+            NSLayoutConstraint.activate([
+                scrollView.topAnchor.constraint(equalTo: view.layoutMarginsGuide.topAnchor),
+                scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                scrollView.bottomAnchor.constraint(equalTo: view.layoutMarginsGuide.bottomAnchor)
+            ])
+        }
+        
         currentServerLabel.translatesAutoresizingMaskIntoConstraints = false
         firstDivider.translatesAutoresizingMaskIntoConstraints = false
         prodServerButton.translatesAutoresizingMaskIntoConstraints = false
@@ -313,19 +350,19 @@ class ChangeServerViewController: UIViewController {
         epsUrlTextfield.translatesAutoresizingMaskIntoConstraints = false
         customServerButton.translatesAutoresizingMaskIntoConstraints = false
         
-        view.addSubview(currentServerLabel)
-        view.addSubview(firstDivider)
-        view.addSubview(prodServerButton)
-        view.addSubview(demoServerButton)
-        view.addSubview(secondDivider)
-        view.addSubview(commonServerLabel)
-        view.addSubview(commonUrlTextfield)
-        view.addSubview(epsServerLabel)
-        view.addSubview(epsUrlTextfield)
-        view.addSubview(customServerButton)
+        scrollView.addSubview(currentServerLabel)
+        scrollView.addSubview(firstDivider)
+        scrollView.addSubview(prodServerButton)
+        scrollView.addSubview(demoServerButton)
+        scrollView.addSubview(secondDivider)
+        scrollView.addSubview(commonServerLabel)
+        scrollView.addSubview(commonUrlTextfield)
+        scrollView.addSubview(epsServerLabel)
+        scrollView.addSubview(epsUrlTextfield)
+        scrollView.addSubview(customServerButton)
         
         NSLayoutConstraint.activate([
-            currentServerLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            currentServerLabel.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: 20),
             firstDivider.topAnchor.constraint(equalTo: currentServerLabel.bottomAnchor, constant: 20),
             prodServerButton.topAnchor.constraint(equalTo: firstDivider.bottomAnchor, constant: 20),
             demoServerButton.topAnchor.constraint(equalTo: prodServerButton.bottomAnchor, constant: 20),
@@ -335,6 +372,7 @@ class ChangeServerViewController: UIViewController {
             epsServerLabel.topAnchor.constraint(equalTo: commonUrlTextfield.bottomAnchor, constant: 12),
             epsUrlTextfield.topAnchor.constraint(equalTo: epsServerLabel.bottomAnchor, constant: 4),
             customServerButton.topAnchor.constraint(equalTo: epsUrlTextfield.bottomAnchor, constant: 20),
+            customServerButton.bottomAnchor.constraint(greaterThanOrEqualTo: scrollView.bottomAnchor, constant: -40),
             
             currentServerLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             currentServerLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
