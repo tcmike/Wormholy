@@ -230,14 +230,14 @@ class ChangeServerViewController: UIViewController {
     }
     
     func commonIsValid() -> Bool {
-        if let commonText = commonUrlTextfield.text, !commonText.isEmpty, commonText.isValidUrl {
+        if let commonText = commonUrlTextfield.text, !commonText.isEmpty {
             return true
         }
         return false
     }
     
     func epsIsEmptyOrValid() -> Bool {
-        if let epsText = epsUrlTextfield.text, epsText.isEmpty || epsText.isValidUrl {
+        if let epsText = epsUrlTextfield.text, epsText.isEmpty {
             return true
         }
         return false
@@ -412,16 +412,6 @@ class ChangeServerViewController: UIViewController {
             epsUrlTextfield.heightAnchor.constraint(equalToConstant: 44),
             customServerButton.heightAnchor.constraint(equalToConstant: 44)
         ])
-    }
-}
-
-fileprivate extension String {
-    var isValidUrl: Bool {
-        get {
-            let regEx = "((?:http|https)://)?(?:www\\.)?[\\w\\d\\-_]+\\.\\w{2,3}(\\.\\w{2})?(/(?<=/)(?:[\\w\\d\\-./_]+)?)?"
-            let predicate = NSPredicate(format: "SELF MATCHES %@", argumentArray: [regEx])
-            return predicate.evaluate(with: self)
-        }
     }
 }
 
