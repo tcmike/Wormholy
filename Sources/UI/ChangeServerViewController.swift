@@ -237,7 +237,7 @@ class ChangeServerViewController: UIViewController {
     }
     
     func epsIsEmptyOrValid() -> Bool {
-        if let epsText = epsUrlTextfield.text, epsText.isEmpty {
+        if let epsText = epsUrlTextfield.text, !epsText.isEmpty {
             return true
         }
         return false
