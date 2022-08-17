@@ -83,30 +83,40 @@ class RequestsViewController: WHBaseViewController {
     @objc func openActionSheet(_ sender: UIBarButtonItem){
         let ac = UIAlertController(title: "Wormholy", message: "Choose an option", preferredStyle: .actionSheet)
         
-        ac.addAction(UIAlertAction(title: "Clear", style: .default) { [weak self] (action) in
+        ac.addAction(UIAlertAction(title: "Clear", style: .default) { [weak self] _ in
             self?.clearRequests()
         })
-        ac.addAction(UIAlertAction(title: "Share", style: .default) { [weak self] (action) in
+        
+        ac.addAction(UIAlertAction(title: "Share", style: .default) { [weak self] _ in
             self?.shareContent(sender)
         })
         
-        ac.addAction(UIAlertAction(title: "Share as cURL", style: .default) { [weak self] (action) in
+        ac.addAction(UIAlertAction(title: "Share as cURL", style: .default) { [weak self] _ in
             self?.shareContent(sender, requestExportOption: .curl)
         })
-        ac.addAction(UIAlertAction(title: "Share as Postman Collection", style: .default) { [weak self] (action) in
+        
+        ac.addAction(UIAlertAction(title: "Share as Postman Collection", style: .default) { [weak self] _ in
             self?.shareContent(sender, requestExportOption: .postman)
         })
-        ac.addAction(UIAlertAction(title: "Change server", style: .default) { [weak self] (action) in
+        
+        ac.addAction(UIAlertAction(title: "Change server", style: .default) { [weak self] _ in
             self?.replaceServer()
         })
-        ac.addAction(UIAlertAction(title: "Change locale", style: .default) { [weak self] (action) in
+        
+        ac.addAction(UIAlertAction(title: "Change locale", style: .default) { [weak self] _ in
             self?.changeLocale()
         })
-        ac.addAction(UIAlertAction(title: "ChangeMode", style: .default, handler: { [weak self] (action) in
+        
+        ac.addAction(UIAlertAction(title: "Change Mode", style: .default, handler: { _ in
             NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestChangeMode"), object: nil, userInfo: nil)
         }))
-        ac.addAction(UIAlertAction(title: "Close", style: .cancel) { (action) in
-        })
+        
+        ac.addAction(UIAlertAction(title: "Display logs", style: .default, handler: { [weak self] (action) in
+            NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestDisplayLogs"), object: nil, userInfo: nil)
+        }))
+        
+        ac.addAction(UIAlertAction(title: "Close", style: .cancel))
+        
         if UIDevice.current.userInterfaceIdiom == .pad {
             ac.popoverPresentationController?.barButtonItem = sender
         }
