@@ -8,69 +8,8 @@
 
 import UIKit
 
-class InsettedTextField: UITextField {
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        
-        self.layer.borderWidth = 2
-        self.layer.cornerRadius = 12
-    }
-    
-    override func textRect(forBounds bounds: CGRect) -> CGRect {
-        return super.textRect(forBounds: bounds).inset(by: UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12))
-    }
-    
-    override func editingRect(forBounds bounds: CGRect) -> CGRect {
-        return super.editingRect(forBounds: bounds).inset(by: UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12))
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-}
-
-class BorderedButton: UIButton {
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        layer.cornerRadius = 12
-    }
-    
-    override var isHighlighted: Bool {
-        get { return super.isHighlighted }
-        set {
-            super.isHighlighted = newValue
-            self.backgroundColor = mBackgroundcolor?.withAlphaComponent(newValue ? 0.6 : 1.0)
-        }
-    }
-    
-    override var isEnabled: Bool {
-        get { return super.isEnabled }
-        set {
-            super.isEnabled = newValue
-            self.backgroundColor = mBackgroundcolor?.withAlphaComponent(newValue ? 1.0 : 0.6)
-        }
-    }
-    
-    var mBackgroundcolor: UIColor? {
-        didSet {
-            self.backgroundColor = mBackgroundcolor
-        }
-    }
-    
-    func setTitle(_ title: String?, for state: UIControl.State, with titleColor: UIColor?, on backgroundColor: UIColor?) {
-        super.setTitle(title, for: state)
-        super.setTitleColor(titleColor, for: state)
-        self.mBackgroundcolor = backgroundColor
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-}
-
 class ChangeServerViewController: UIViewController {
+    
     let scrollView = UIScrollView()
     let currentServerLabel = UILabel()
     let firstDivider = UIView()
@@ -83,18 +22,11 @@ class ChangeServerViewController: UIViewController {
     let epsUrlTextfield = InsettedTextField()
     let customServerButton = BorderedButton()
     
-    let prodCommonUrlString = "https://v1.doma.ai/admin/api"
-    let prodEpsUrlString = "https://eps.doma.ai/admin/api"
-    let demoCommonUrlString = "https://condo.d.doma.ai/admin/api"
-    let demoEpsUrlString = "https://eps.d.doma.ai/admin/api"
-    
     let mainColor: UIColor = UIColor(red: 0.286, green: 0.490, blue: 0.998, alpha: 1)
     let secondaryColor: UIColor = .lightGray
     
-    enum SwitchTo {
-        case prod
-        case demo
-        case custom
+    var currentServer: ServerInfoStorage.Server? {
+        ServerInfoStorage.shared.currentServer
     }
     
     override func viewDidLoad() {
@@ -110,7 +42,7 @@ class ChangeServerViewController: UIViewController {
         
         //current label
         currentServerLabel.numberOfLines = 0
-        currentServerLabel.text = getCurrentServer()
+        currentServerLabel.text = getCurrentServerLabelText()
         currentServerLabel.textColor = secondaryColor
         
         //prod button
@@ -164,13 +96,10 @@ class ChangeServerViewController: UIViewController {
     }
     
     func configureProdButton() {
-        if  let commonUrl = URL(string: prodCommonUrlString),
-            let epsUrl = URL(string: prodEpsUrlString),
-            ServerInfoStorage.commonUrl?.absoluteString == commonUrl.absoluteString &&
-            ServerInfoStorage.epsUrl?.absoluteString == epsUrl.absoluteString
-        {
+        if currentServer == .prod {
             prodServerButton.setTitle("Currently at prod", for: .normal, with: .white, on: mainColor)
             prodServerButton.isEnabled = false
+            
         } else {
             prodServerButton.setTitle("Prod server", for: .normal, with: .white, on: mainColor)
             prodServerButton.addTarget(self, action: #selector(switchToProd), for: .touchUpInside)
@@ -178,13 +107,10 @@ class ChangeServerViewController: UIViewController {
     }
     
     func configureDemoButton() {
-        if  let commonUrl = URL(string: demoCommonUrlString),
-            let epsUrl = URL(string: demoEpsUrlString),
-            ServerInfoStorage.commonUrl?.absoluteString == commonUrl.absoluteString &&
-            ServerInfoStorage.epsUrl?.absoluteString == epsUrl.absoluteString
-        {
+        if currentServer == .demo {
             demoServerButton.setTitle("Currently at demo", for: .normal, with: .white, on: mainColor)
             demoServerButton.isEnabled = false
+            
         } else {
             demoServerButton.setTitle("Demo server", for: .normal, with: .white, on: mainColor)
             demoServerButton.addTarget(self, action: #selector(switchToDemo), for: .touchUpInside)
@@ -192,47 +118,63 @@ class ChangeServerViewController: UIViewController {
     }
     
     @objc func switchToProd() {
-        if let commonUrl = URL(string: prodCommonUrlString), let epsUrl = URL(string: prodEpsUrlString) {
-            swichTo(common: commonUrl, eps: epsUrl)
-        } else {
-            failedToSwitch(to: .prod)
+        guard currentServer != .prod,
+              let url = urls(for: .prod),
+              let common = url.common?.url,
+              let eps = url.eps?.url
+        else {
+            return failedToSwitch(to: .prod)
         }
+        
+        swichTo(common: common, eps: eps)
     }
     
     @objc func switchToDemo() {
-        if let demoUrl = URL(string: demoCommonUrlString), let epsUrl = URL(string: demoEpsUrlString) {
-            swichTo(common: demoUrl, eps: epsUrl)
-        } else {
-            failedToSwitch(to: .demo)
+        guard currentServer != .demo,
+              let url = urls(for: .demo),
+              let common = url.common?.url,
+              let eps = url.eps?.url
+        else {
+            return failedToSwitch(to: .demo)
         }
+        
+        swichTo(common: common, eps: eps)
     }
     
     @objc func switchToCustom() {
-        if commonIsValid() && epsIsEmptyOrValid() {
-            if let epsText = epsUrlTextfield.text?.lowercased(), !epsText.isEmpty {
-                if let commonUrl = URL(string: commonUrlTextfield.text ?? ""), let epsUrl = URL(string: epsUrlTextfield.text?.lowercased() ?? "") {
-                    if commonUrl.absoluteString == ServerInfoStorage.commonUrl?.absoluteString && epsUrl.absoluteString == ServerInfoStorage.epsUrl?.absoluteString {
-                        failedToSwitch(to: .custom)
-                    } else {
-                        swichTo(common: commonUrl, eps: epsUrl)
-                    }
-                } else {
-                    failedToSwitch(to: .custom)
-                }
-            } else if let commonUrl = URL(string: commonUrlTextfield.text?.lowercased() ?? ""), let demoEpsUrl = URL(string: demoEpsUrlString) {
-                swichTo(common: commonUrl, eps: demoEpsUrl)
-            } else {
-                failedToSwitch(to: .custom)
-            }
-        } else {
-            failedToSwitch(to: .custom)
+        guard commonIsValid() && epsIsEmptyOrValid() else {
+            return failedToSwitch(to: .custom)
         }
+        
+        let targetCommon = commonUrlTextfield.text?.lowercased().url
+        
+        guard let targetCommon else {
+            return failedToSwitch(to: .custom)
+        }
+        
+        let targetEps = epsUrlTextfield.text?.lowercased().url
+        let knownURLs = ServerInfoStorage.shared.knownURLs
+        
+        if targetCommon.absoluteString == knownURLs[.prod]?.common && (targetEps?.absoluteString == knownURLs[.prod]?.eps || targetEps == nil) {
+            return switchToProd()
+        }
+        
+        if targetCommon.absoluteString == knownURLs[.demo]?.common && (targetEps?.absoluteString == knownURLs[.demo]?.eps || targetEps == nil) {
+            return switchToDemo()
+        }
+        
+        if let epsURL = targetEps ?? knownURLs[.demo]?.eps?.url {
+            return swichTo(common: targetCommon, eps: epsURL)
+        }
+        
+        return failedToSwitch(to: .custom)
     }
     
     func commonIsValid() -> Bool {
         if let commonText = commonUrlTextfield.text, !commonText.isEmpty {
             return true
         }
+        
         return false
     }
     
@@ -240,6 +182,7 @@ class ChangeServerViewController: UIViewController {
         if let epsText = epsUrlTextfield.text, !epsText.isEmpty {
             return true
         }
+        
         return false
     }
     
@@ -248,17 +191,20 @@ class ChangeServerViewController: UIViewController {
             self?.view.subviews.forEach {
                 $0.alpha = 0.0
             }
+            
         } completion: { [weak self] _ in
             self?.navigationController?.popViewController(animated: true)
             self?.parent?.dismiss(animated: false, completion: {
-                NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestChangeServer"),
-                                                object: nil,
-                                                userInfo: ["commonUrl": commonUrl, "epsUrl": epsUrl])
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("kWormholyRequestChangeServer"),
+                    object: nil,
+                    userInfo: ["commonUrl": commonUrl, "epsUrl": epsUrl]
+                )
             })
         }
     }
     
-    func failedToSwitch(to server: SwitchTo) {
+    func failedToSwitch(to server: ServerInfoStorage.Server) {
         let errorColor = UIColor.red
         
         switch server {
@@ -312,11 +258,25 @@ class ChangeServerViewController: UIViewController {
         }
     }
     
-    func getCurrentServer() -> String {
+    func getCurrentServerLabelText() -> String {
+        guard let urls = urls(for: currentServer) else {
+            return "Not registered"
+        }
+        
         let defaultString = "not determined"
-        let serverString = ServerInfoStorage.commonUrl?.absoluteString ?? defaultString
-        let epsString = ServerInfoStorage.epsUrl?.absoluteString ?? defaultString
+        
+        let serverString = urls.common ?? defaultString
+        let epsString = urls.eps ?? defaultString
+        
         return "Common: \(serverString)\nEPS: \(epsString)"
+    }
+    
+    func urls(for server: ServerInfoStorage.Server?) -> ServerInfoStorage.ServerURLs? {
+        guard let server else {
+            return nil
+        }
+        
+        return ServerInfoStorage.shared.knownURLs[server]
     }
     
     func placeSubviews() {
@@ -415,12 +375,101 @@ class ChangeServerViewController: UIViewController {
     }
 }
 
-open class ServerInfoStorage {
-    public static var commonUrl: URL?
-    public static var epsUrl: URL?
+// MARK: - Support
+
+extension String {
     
-    public static func setNewServers(commonUrl: URL?, epsUrl: URL?) {
-        self.commonUrl = commonUrl
-        self.epsUrl = epsUrl
+    var url: URL? {
+        return URL(string: self)
+    }
+}
+
+
+open class ServerInfoStorage {
+    
+    public typealias ServerURLs = (common: String?, eps: String?)
+    
+    public enum Server: CaseIterable {
+        case prod
+        case demo
+        case custom
+    }
+    
+    public static let shared = ServerInfoStorage()
+    
+    private(set) var knownURLs: [Server: ServerURLs] = [:]
+    private(set) var currentServer: Server?
+    
+    public func register(urls: ServerURLs, for server: Server) {
+        knownURLs[server] = urls
+    }
+    
+    public func setCurrent(server: Server) {
+        currentServer = server
+    }
+}
+
+// MARK: - Views
+
+class InsettedTextField: UITextField {
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        self.layer.borderWidth = 2
+        self.layer.cornerRadius = 12
+    }
+    
+    override func textRect(forBounds bounds: CGRect) -> CGRect {
+        return super.textRect(forBounds: bounds).inset(by: UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12))
+    }
+    
+    override func editingRect(forBounds bounds: CGRect) -> CGRect {
+        return super.editingRect(forBounds: bounds).inset(by: UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12))
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+
+class BorderedButton: UIButton {
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        layer.cornerRadius = 12
+    }
+    
+    override var isHighlighted: Bool {
+        get { return super.isHighlighted }
+        set {
+            super.isHighlighted = newValue
+            self.backgroundColor = mBackgroundcolor?.withAlphaComponent(newValue ? 0.6 : 1.0)
+        }
+    }
+    
+    override var isEnabled: Bool {
+        get { return super.isEnabled }
+        set {
+            super.isEnabled = newValue
+            self.backgroundColor = mBackgroundcolor?.withAlphaComponent(newValue ? 1.0 : 0.6)
+        }
+    }
+    
+    var mBackgroundcolor: UIColor? {
+        didSet {
+            self.backgroundColor = mBackgroundcolor
+        }
+    }
+    
+    func setTitle(_ title: String?, for state: UIControl.State, with titleColor: UIColor?, on backgroundColor: UIColor?) {
+        super.setTitle(title, for: state)
+        super.setTitleColor(titleColor, for: state)
+        self.mBackgroundcolor = backgroundColor
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
