@@ -12,12 +12,19 @@ import Foundation
 public struct WormholyButtonDescriptor {
     
     public let title: String
+    public let style: WormholyPresentationStyle
     public let block: () -> UIViewController?
     
-    public init(title: String, block: @escaping () -> UIViewController?) {
+    public init(title: String, style: WormholyPresentationStyle = .push, block: @escaping () -> UIViewController?) {
         self.title = title
+        self.style = style
         self.block = block
     }
+}
+
+public enum WormholyPresentationStyle {
+    case push
+    case present
 }
 
 extension Wormholy {

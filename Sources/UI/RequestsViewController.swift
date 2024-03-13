@@ -53,7 +53,6 @@ class RequestsViewController: WHBaseViewController {
                 self?.collectionView.reloadData()
             }
         }
-        
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -133,7 +132,13 @@ class RequestsViewController: WHBaseViewController {
                 guard buttonFree else { return }
                 buttonFree = false
                 if let controller = descriptor.block() {
-                    self?.navigationController?.pushViewController(controller, animated: true)
+                    switch descriptor.style {
+                    case .present:
+                        self?.present(controller, animated: true)
+                    case .push:
+                        self?.navigationController?.pushViewController(controller, animated: true)
+                    }
+                    
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1/3) {
                         buttonFree = true
                     }
@@ -143,18 +148,6 @@ class RequestsViewController: WHBaseViewController {
                 }
             }))
         }
-        
-        ac.append(UIAlertAction(title: "Change locale", style: .default) { [weak self] _ in
-            self?.changeLocale()
-        })
-        
-        ac.append(UIAlertAction(title: "Change Mode", style: .default, handler: { _ in
-            NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestChangeMode"), object: nil, userInfo: nil)
-        }))
-        
-        ac.append(UIAlertAction(title: "Display logs", style: .default, handler: { [weak self] (action) in
-            NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestDisplayLogs"), object: nil, userInfo: nil)
-        }))
         
         return ac
     }
@@ -173,10 +166,6 @@ class RequestsViewController: WHBaseViewController {
         }
         
         return ac
-    }
-    
-    func changeLocale() {
-        NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestChangeLocale"), object: nil, userInfo: nil)
     }
     
     func clearRequests() {
