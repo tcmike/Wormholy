@@ -65,6 +65,7 @@
 		8933C7851EB5B820000D00A4 /* Wormholy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8933C7841EB5B820000D00A4 /* Wormholy.swift */; };
 		8933C7901EB5B82D000D00A4 /* WormholyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8933C7891EB5B82A000D00A4 /* WormholyTests.swift */; };
 		93A86AB12228349F006E56FB /* SwiftySelfAwareHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A86AB02228349F006E56FB /* SwiftySelfAwareHelper.swift */; };
+		C04E6B1D2BA06EA9005344B3 /* Wormholy+CustomButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = C04E6B1C2BA06EA9005344B3 /* Wormholy+CustomButtons.swift */; };
 		C1A982A126AEF9F500895C4C /* ChangeServerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A982A026AEF9F500895C4C /* ChangeServerViewController.swift */; };
 /* End PBXBuildFile section */
 
@@ -142,6 +143,7 @@
 		93A86AB02228349F006E56FB /* SwiftySelfAwareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftySelfAwareHelper.swift; sourceTree = "<group>"; };
 		AD2FAA261CD0B6D800659CF4 /* Wormholy.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Wormholy.plist; sourceTree = "<group>"; };
 		AD2FAA281CD0B6E100659CF4 /* WormholyTests.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = WormholyTests.plist; sourceTree = "<group>"; };
+		C04E6B1C2BA06EA9005344B3 /* Wormholy+CustomButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Wormholy+CustomButtons.swift"; sourceTree = "<group>"; };
 		C1A982A026AEF9F500895C4C /* ChangeServerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeServerViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -348,6 +350,7 @@
 			isa = PBXGroup;
 			children = (
 				8933C7841EB5B820000D00A4 /* Wormholy.swift */,
+				C04E6B1C2BA06EA9005344B3 /* Wormholy+CustomButtons.swift */,
 				455818C1207D61A100D2F954 /* CustomHTTPProtocol.swift */,
 				455818C2207D61A100D2F954 /* Storage.swift */,
 				45C51A1620A1FDBC006933CE /* module.modulemap */,
@@ -575,6 +578,7 @@
 				451C9E602080F653002A34BC /* WHBundle.swift in Sources */,
 				64DD525C23F86B3D00AB92C4 /* ShareUtils.swift in Sources */,
 				452CC13421773BF600CB5E21 /* FileHandler.swift in Sources */,
+				C04E6B1D2BA06EA9005344B3 /* Wormholy+CustomButtons.swift in Sources */,
 				451C9E5E2080EFF5002A34BC /* Config.swift in Sources */,
 				64DD525A23F84A5F00AB92C4 /* RequestResponseExportOption.swift in Sources */,
 				45820CF6208170F400CA74D6 /* Colors.swift in Sources */,

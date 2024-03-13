@@ -19,7 +19,29 @@ class RequestsViewController: WHBaseViewController {
         
         addSearchController()
         
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "More", style: .plain, target: self, action: #selector(openActionSheet(_:)))
+        let btn = UIButton()
+        btn.tintColor = UIColor.systemBlue
+        btn.setTitle("More", for: .normal)
+        btn.setTitleColor(UIColor.systemBlue, for: .normal)
+        btn.addTarget(self, action: #selector(openActionSheet(_:)), for: .touchUpInside)
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: btn)
+        
+        if #available(iOS 14.0, *) {
+            btn.showsMenuAsPrimaryAction = true
+            btn.menu = .init(
+                title: "Choose an option", options: [.displayInline], children: [
+                    UIDeferredMenuElement({ [weak self, weak sender = navigationItem.leftBarButtonItem] resovle in
+                        guard let self, let sender else {
+                            return resovle([])
+                        }
+                        
+                        return resovle(createActions(sender: sender).map({ $0.toMenuAction() }))
+                    })
+                ]
+            )
+        }
+        
+        //navigationItem.leftBarButtonItem = UIBarButtonItem(title: "More", style: .plain, target: self, action: #selector(openActionSheet(_:)))
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
         
         collectionView?.register(UINib(nibName: "RequestCell", bundle:WHBundle.getBundle()), forCellWithReuseIdentifier: "RequestCell")
@@ -80,51 +102,77 @@ class RequestsViewController: WHBaseViewController {
     }
     
     // MARK: - Actions
-    @objc func openActionSheet(_ sender: UIBarButtonItem){
-        let ac = UIAlertController(title: "Wormholy", message: "Choose an option", preferredStyle: .actionSheet)
+    
+    @objc func openActionSheet(_ sender: UIBarButtonItem) {
+        present(createAlert(sender: sender), animated: true, completion: nil)
+    }
+    
+    //as soon as UIAlertAction is added to UIAlertViewController, it's handler == nil, and it's broken
+    func createActions(sender: UIBarButtonItem) -> [UIAlertAction] {
+        var ac = [UIAlertAction]()
         
-        ac.addAction(UIAlertAction(title: "Clear", style: .default) { [weak self] _ in
+        ac.append(UIAlertAction(title: "Clear", style: .default) { [weak self] _ in
             self?.clearRequests()
         })
         
-        ac.addAction(UIAlertAction(title: "Share", style: .default) { [weak self] _ in
+        ac.append(UIAlertAction(title: "Share", style: .default) { [weak self] _ in
             self?.shareContent(sender)
         })
         
-        ac.addAction(UIAlertAction(title: "Share as cURL", style: .default) { [weak self] _ in
+        ac.append(UIAlertAction(title: "Share as cURL", style: .default) { [weak self] _ in
             self?.shareContent(sender, requestExportOption: .curl)
         })
         
-        ac.addAction(UIAlertAction(title: "Share as Postman Collection", style: .default) { [weak self] _ in
+        ac.append(UIAlertAction(title: "Share as Postman Collection", style: .default) { [weak self] _ in
             self?.shareContent(sender, requestExportOption: .postman)
         })
         
-        ac.addAction(UIAlertAction(title: "Change server", style: .default) { [weak self] _ in
-            self?.replaceServer()
-        })
+        for descriptor in Wormholy.additionalButtons {
+            var buttonFree: Bool = true
+            ac.append(.init(title: descriptor.title, style: .default, handler: { [weak self] action in
+                guard buttonFree else { return }
+                buttonFree = false
+                if let controller = descriptor.block() {
+                    self?.navigationController?.pushViewController(controller, animated: true)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1/3) {
+                        buttonFree = true
+                    }
+                    
+                } else {
+                    buttonFree = true
+                }
+            }))
+        }
         
-        ac.addAction(UIAlertAction(title: "Change locale", style: .default) { [weak self] _ in
+        ac.append(UIAlertAction(title: "Change locale", style: .default) { [weak self] _ in
             self?.changeLocale()
         })
         
-        ac.addAction(UIAlertAction(title: "Change Mode", style: .default, handler: { _ in
+        ac.append(UIAlertAction(title: "Change Mode", style: .default, handler: { _ in
             NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestChangeMode"), object: nil, userInfo: nil)
         }))
         
-        ac.addAction(UIAlertAction(title: "Display logs", style: .default, handler: { [weak self] (action) in
+        ac.append(UIAlertAction(title: "Display logs", style: .default, handler: { [weak self] (action) in
             NotificationCenter.default.post(name: NSNotification.Name("kWormholyRequestDisplayLogs"), object: nil, userInfo: nil)
         }))
+        
+        return ac
+    }
+    
+    func createAlert(sender: UIBarButtonItem) -> UIAlertController {
+        let ac = UIAlertController(title: "Wormholy", message: "Choose an option", preferredStyle: .actionSheet)
+        
+        for action in createActions(sender: sender) {
+            ac.addAction(action)
+        }
         
         ac.addAction(UIAlertAction(title: "Close", style: .cancel))
         
         if UIDevice.current.userInterfaceIdiom == .pad {
             ac.popoverPresentationController?.barButtonItem = sender
         }
-        present(ac, animated: true, completion: nil)
-    }
-    
-    func replaceServer() {
-        navigationController?.pushViewController(ChangeServerViewController(), animated: true)
+        
+        return ac
     }
     
     func changeLocale() {
@@ -189,5 +237,35 @@ extension RequestsViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
         filteredRequests = filterRequests(text: searchController.searchBar.text)
         collectionView.reloadData()
+    }
+}
+
+extension UIAlertAction {
+    
+    typealias AlertHandler = @convention(block) (UIAlertAction) -> Void
+    
+    func callHandler() {
+        guard let block = perform(Selector("handler")) else {
+            return
+        }
+        
+        unsafeBitCast(block.takeUnretainedValue(), to: AlertHandler.self)(self)
+    }
+    
+    func toMenuAction() -> UIAction {
+        return UIAction(
+            title: title ?? "",
+            attributes: {
+                var attrs = UIAction.Attributes()
+                if style == .destructive {
+                    attrs.insert(.destructive)
+                }
+                
+                return attrs
+            }(),
+            handler: { [self] _ in
+                self.callHandler()
+            }
+        )
     }
 }

@@ -5,7 +5,7 @@
 //  Created by MIKHAIL CHEPELEV on 26.07.2021.
 //  Copyright © 2021 Wormholy. All rights reserved.
 //
-
+/*
 import UIKit
 
 class ChangeServerViewController: UIViewController {
@@ -384,31 +384,6 @@ extension String {
     }
 }
 
-
-open class ServerInfoStorage {
-    
-    public typealias ServerURLs = (common: String?, eps: String?)
-    
-    public enum Server: CaseIterable {
-        case prod
-        case demo
-        case custom
-    }
-    
-    public static let shared = ServerInfoStorage()
-    
-    private(set) var knownURLs: [Server: ServerURLs] = [:]
-    private(set) var currentServer: Server?
-    
-    public func register(urls: ServerURLs, for server: Server) {
-        knownURLs[server] = urls
-    }
-    
-    public func setCurrent(server: Server) {
-        currentServer = server
-    }
-}
-
 // MARK: - Views
 
 class InsettedTextField: UITextField {
@@ -473,3 +448,4 @@ class BorderedButton: UIButton {
         fatalError("init(coder:) has not been implemented")
     }
 }
+*/
