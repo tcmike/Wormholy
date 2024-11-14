@@ -110,20 +110,26 @@ class RequestsViewController: WHBaseViewController {
     func createActions(sender: UIBarButtonItem) -> [UIAlertAction] {
         var ac = [UIAlertAction]()
         
-        ac.append(UIAlertAction(title: "Clear", style: .default) { [weak self] _ in
+        ac.append(UIAlertAction(title: "🗑️ Clear", style: .default) { [weak self] _ in
             self?.clearRequests()
         })
         
-        ac.append(UIAlertAction(title: "Share", style: .default) { [weak self] _ in
-            self?.shareContent(sender)
-        })
-        
-        ac.append(UIAlertAction(title: "Share as cURL", style: .default) { [weak self] _ in
-            self?.shareContent(sender, requestExportOption: .curl)
-        })
-        
-        ac.append(UIAlertAction(title: "Share as Postman Collection", style: .default) { [weak self] _ in
-            self?.shareContent(sender, requestExportOption: .postman)
+        ac.append(UIAlertAction(title: "📤 Share", style: .default) { [weak self] _ in
+            let alert = UIAlertController(title: "Share format", message: nil, preferredStyle: .alert)
+            
+            alert.addAction(.init(title: "Share as it is", style: .default, handler: { [weak self] _ in
+                self?.shareContent(sender)
+            }))
+            
+            alert.addAction(.init(title: "Share as cURL", style: .default, handler: { [weak self] _ in
+                self?.shareContent(sender, requestExportOption: .curl)
+            }))
+            
+            alert.addAction(.init(title: "Share as Postman", style: .default, handler: { [weak self] _ in
+                self?.shareContent(sender, requestExportOption: .postman)
+            }))
+            
+            self?.present(alert, animated: true)
         })
         
         for descriptor in Wormholy.additionalButtons {
