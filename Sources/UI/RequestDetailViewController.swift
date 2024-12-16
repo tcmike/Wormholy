@@ -36,8 +36,28 @@ class RequestDetailViewController: WHBaseViewController {
             title = URL(string: urlString)?.path
         }
         
-        let shareButton = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(openActionSheet(_:)))
-        navigationItem.rightBarButtonItems = [shareButton]
+        let btn = UIButton()
+        btn.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
+        btn.tintColor = UIColor.systemBlue
+        btn.setTitleColor(UIColor.systemBlue, for: .normal)
+        btn.addTarget(self, action: #selector(openActionSheet(_:)), for: .touchUpInside)
+        navigationItem.rightBarButtonItems = [UIBarButtonItem(customView: btn)]
+        
+        if #available(iOS 14.0, *) {
+            btn.showsMenuAsPrimaryAction = true
+            btn.menu = .init(
+                title: "Choose an option", options: [.displayInline], children: [
+                    UIDeferredMenuElement({ [weak self, weak sender = navigationItem.rightBarButtonItem] resolve in
+                        guard let self, let sender else {
+                            return resolve([])
+                        }
+                        
+                        resolve(self.createMenuActions(sender: sender))
+                        return
+                    })
+                ]
+            )
+        }
         
         tableView.estimatedRowHeight = 100.0
         tableView.rowHeight = UITableView.automaticDimension
@@ -69,6 +89,27 @@ class RequestDetailViewController: WHBaseViewController {
             ac.popoverPresentationController?.barButtonItem = sender
         }
         present(ac, animated: true, completion: nil)
+    }
+    
+    func createMenuActions(sender: UIBarButtonItem) -> [UIMenuElement] {
+        return [
+            UIAction(title: "Share", handler: { [weak self, weak sender] action in
+                guard let sender else { return }
+                self?.shareContent(sender)
+            }),
+            UIAction(title: "Share as File", handler: { [weak self, weak sender] action in
+                guard let sender else { return }
+                self?.shareContent(sender, requestExportOption: .flatFile)
+            }),
+            UIAction(title: "Share as cURL", handler: { [weak self, weak sender] action in
+                guard let sender else { return }
+                self?.shareContent(sender, requestExportOption: .curl)
+            }),
+            UIAction(title: "Share as Postman Collection", handler: { [weak self, weak sender] action in
+                guard let sender else { return }
+                self?.shareContent(sender, requestExportOption: .postman)
+            })
+        ]
     }
     
     func shareContent(_ sender: UIBarButtonItem, requestExportOption: RequestResponseExportOption = .flat){

@@ -12,6 +12,8 @@ import Foundation
 enum RequestResponseExportOption {
     /// Export a request and its response in a "human" readable mode.
     case flat
+    /// Same as file, but is ready to be read by file manager
+    case flatFile
     /// Request is exported as a cURL command; response is exported in a "human" readable mode.
     case curl
     /// Request and response are exported as Postman collection (v.2.1). Response is attached as "example".

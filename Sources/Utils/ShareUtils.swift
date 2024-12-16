@@ -13,7 +13,7 @@ final class ShareUtils {
     static func shareRequests(presentingViewController: UIViewController, sender: UIBarButtonItem, requests: [RequestModel], requestExportOption: RequestResponseExportOption = .flat){
          var text = ""
          switch requestExportOption {
-         case .flat:
+         case .flat, .flatFile:
              text = getTxtText(requests: requests)
          case .curl:
              text = getCurlText(requests: requests)
@@ -22,36 +22,48 @@ final class ShareUtils {
             text = text.replacingOccurrences(of: "\\/", with: "/")
         }
          
-        let textShare = [text]
         let customItem = CustomActivity(title: "Save to the desktop", image: UIImage(named: "activity_icon", in: WHBundle.getBundle(), compatibleWith: nil)) { (sharedItems) in
-             guard let sharedStrings = sharedItems as? [String] else { return }
+            guard let sharedString = sharedItems.first(where: { $0 is String }) as? String else { return }
             
-            let appName = Bundle.main.infoDictionary![kCFBundleNameKey as String] as! String
+            let fileName = exportNameForFile(requestExportOption: requestExportOption)            
+            FileHandler.writeTxtFileOnDesktop(text: sharedString, fileName: fileName)
+        }
+        
+        var activityItems: [Any]
+        var applicationActivities: [UIActivity]?
+        if case .flatFile = requestExportOption {
+            let fileName = exportNameForFile(requestExportOption: requestExportOption)
+            let url = FileHandler.writeTxtFileToTempDirectory(text: text, fileName: fileName)
+            activityItems = [NSURL.fileURL(withPath: url.path)]
             
-            let dateFormatterGet = DateFormatter()
-            dateFormatterGet.dateFormat = "yyyyMMdd_HHmmss_SSS"
-            
-            let suffix: String
-            switch requestExportOption {
-                case .flat:
-                    suffix = "-wormholy.txt"
-                case .curl:
-                    suffix = "-wormholy.txt"
-                case .postman:
-                   suffix = "-postman_collection.json"
-            }
-            
-            let filename = "\(appName)_\(dateFormatterGet.string(from: Date()))\(suffix)"
-             
-             for string in sharedStrings {
-                 FileHandler.writeTxtFileOnDesktop(text: string, fileName: filename)
-             }
-         }
-         let activityViewController = UIActivityViewController(activityItems: textShare, applicationActivities: [customItem])
-         activityViewController.popoverPresentationController?.barButtonItem = sender
-         presentingViewController.present(activityViewController, animated: true, completion: nil)
+        } else {
+            activityItems = [text]
+            applicationActivities = [customItem]
+        }
+        
+        let activityViewController = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
+        activityViewController.popoverPresentationController?.barButtonItem = sender
+        presentingViewController.present(activityViewController, animated: true, completion: nil)
      }
         
+    private static func exportNameForFile(requestExportOption: RequestResponseExportOption) -> String {
+        let appName = Bundle.main.infoDictionary![kCFBundleNameKey as String] as! String
+        let dateFormatterGet = DateFormatter()
+        dateFormatterGet.dateFormat = "yyyyMMdd_HHmmss_SSS"
+        let suffix: String
+        switch requestExportOption {
+        case .flat, .flatFile:
+            suffix = "-wormholy.txt"
+        case .curl:
+            suffix = "-wormholy.txt"
+        case .postman:
+            suffix = "-postman_collection.json"
+        }
+        
+        let filename = "\(appName)_\(dateFormatterGet.string(from: Date()))\(suffix)"
+        return filename
+    }
+    
     private static func getTxtText(requests: [RequestModel]) -> String {
         var text: String = ""
         for request in requests{
