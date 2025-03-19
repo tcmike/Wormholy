@@ -24,18 +24,20 @@ class RequestsViewController: WHBaseViewController {
         btn.setTitle("More", for: .normal)
         btn.setTitleColor(UIColor.systemBlue, for: .normal)
         btn.addTarget(self, action: #selector(openActionSheet(_:)), for: .touchUpInside)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: btn)
+        
+        let newBarButton = UIBarButtonItem(customView: btn)
+        navigationItem.leftBarButtonItem = newBarButton
         
         if #available(iOS 14.0, *) {
             btn.showsMenuAsPrimaryAction = true
             btn.menu = .init(
                 title: "Choose an option", options: [.displayInline], children: [
-                    UIDeferredMenuElement({ [weak self, weak sender = navigationItem.leftBarButtonItem] resovle in
-                        guard let self, let sender else {
+                    UIDeferredMenuElement({ [weak self, weak newBarButton] resovle in
+                        guard let self, let newBarButton else {
                             return resovle([])
                         }
                         
-                        return resovle(createActions(sender: sender).map({ $0.toMenuAction() }))
+                        return resovle(self.createActions(sender: newBarButton).map({ $0.toMenuAction() }))
                     })
                 ]
             )
