@@ -99,7 +99,7 @@ class RequestsViewController: WHBaseViewController {
     
     @available(iOS 14.0, *)
     @objc func reloadMenu(_ sender: UIBarButtonItem) {
-        menuButton.menu = .init(
+        menuButton?.menu = .init(
             title: "Choose an option", options: [.displayInline], children: [
                 UIDeferredMenuElement({ [weak self, weak sender] resovle in
                     guard let self, let sender else {
