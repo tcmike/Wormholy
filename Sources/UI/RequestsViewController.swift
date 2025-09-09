@@ -13,6 +13,7 @@ class RequestsViewController: WHBaseViewController {
     @IBOutlet weak var collectionView: WHCollectionView!
     var filteredRequests: [RequestModel] = []
     var searchController: UISearchController?
+    weak var menuButton: UIButton?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,23 +25,15 @@ class RequestsViewController: WHBaseViewController {
         btn.setTitle("More", for: .normal)
         btn.setTitleColor(UIColor.systemBlue, for: .normal)
         btn.addTarget(self, action: #selector(openActionSheet(_:)), for: .touchUpInside)
+        menuButton = btn
         
         let newBarButton = UIBarButtonItem(customView: btn)
         navigationItem.leftBarButtonItem = newBarButton
         
         if #available(iOS 14.0, *) {
             btn.showsMenuAsPrimaryAction = true
-            btn.menu = .init(
-                title: "Choose an option", options: [.displayInline], children: [
-                    UIDeferredMenuElement({ [weak self, weak newBarButton] resovle in
-                        guard let self, let newBarButton else {
-                            return resovle([])
-                        }
-                        
-                        return resovle(self.createActions(sender: newBarButton).map({ $0.toMenuAction() }))
-                    })
-                ]
-            )
+            btn.addTarget(self, action: #selector(reloadMenu(_:)), for: .menuActionTriggered)
+            reloadMenu(newBarButton)
         }
         
         //navigationItem.leftBarButtonItem = UIBarButtonItem(title: "More", style: .plain, target: self, action: #selector(openActionSheet(_:)))
@@ -104,76 +97,155 @@ class RequestsViewController: WHBaseViewController {
     
     // MARK: - Actions
     
+    @available(iOS 14.0, *)
+    @objc func reloadMenu(_ sender: UIBarButtonItem) {
+        sender.menu = .init(
+            title: "Choose an option", options: [.displayInline], children: [
+                UIDeferredMenuElement({ [weak self, weak sender] resovle in
+                    guard let self, let sender else {
+                        return resovle([])
+                    }
+                    
+                    return resovle(self.createActions(sender: sender).map({ $0.toMenuAction(presenter: self) }))
+                })
+            ]
+        )
+    }
+    
     @objc func openActionSheet(_ sender: UIBarButtonItem) {
         present(createAlert(sender: sender), animated: true, completion: nil)
     }
     
     //as soon as UIAlertAction is added to UIAlertViewController, it's handler == nil, and it's broken
-    func createActions(sender: UIBarButtonItem) -> [UIAlertAction] {
-        var ac = [UIAlertAction]()
+    func createActions(sender: UIBarButtonItem) -> [Wormholy.ButtonDescriptor] {
+        var ac = [Wormholy.ButtonDescriptor]()
         
-        ac.append(UIAlertAction(title: "🗑️ Clear", style: .default) { [weak self] _ in
+        ac.append(.action(title: "🗑️ Clear", style: .default, handler: { [weak self] in
             self?.clearRequests()
-        })
+            return nil
+        }))
         
-        ac.append(UIAlertAction(title: "📤 Share", style: .default) { [weak self] _ in
-            let alert = UIAlertController(title: "Share format", message: nil, preferredStyle: .alert)
-            
-            alert.addAction(.init(title: "Share as it is", style: .default, handler: { [weak self] _ in
+        ac.append(.submenu(title: "📤 Share", style: .default, children: [
+            .action(title: "Share as it is", style: .default, handler: { [weak self] in
                 self?.shareContent(sender)
-            }))
+                return nil
+            }),
             
-            alert.addAction(.init(title: "Share as cURL", style: .default, handler: { [weak self] _ in
+            .action(title: "Share as cURL", style: .default, handler: { [weak self] in
                 self?.shareContent(sender, requestExportOption: .curl)
-            }))
+                return nil
+            }),
             
-            alert.addAction(.init(title: "Share as Postman", style: .default, handler: { [weak self] _ in
+            .action(title: "Share as Postman", style: .default, handler: { [weak self] in
                 self?.shareContent(sender, requestExportOption: .postman)
-            }))
-            
-            self?.present(alert, animated: true)
-        })
+                return nil
+            })
+        ]))
         
-        for descriptor in Wormholy.additionalButtons {
-            var buttonFree: Bool = true
-            ac.append(.init(title: descriptor.title, style: .default, handler: { [weak self] action in
-                guard buttonFree else { return }
-                buttonFree = false
-                if let controller = descriptor.block() {
-                    switch descriptor.style {
-                    case .present:
-                        self?.present(controller, animated: true)
-                    case .push:
-                        self?.navigationController?.pushViewController(controller, animated: true)
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1/3) {
-                        buttonFree = true
-                    }
-                    
-                } else {
-                    buttonFree = true
-                }
-            }))
-        }
+        ac.append(contentsOf: Wormholy.additionalButtonsBlock())
         
         return ac
     }
     
     func createAlert(sender: UIBarButtonItem) -> UIAlertController {
-        let ac = UIAlertController(title: "Wormholy", message: "Choose an option", preferredStyle: .actionSheet)
+        let alertController = UIAlertController(title: "Wormholy", message: "Choose an option", preferredStyle: .actionSheet)
         
-        for action in createActions(sender: sender) {
-            ac.addAction(action)
+        for buttonDescriptor in createActions(sender: sender) {
+            let action = createAlertAction(from: buttonDescriptor, presenter: self)
+            alertController.addAction(action)
         }
         
-        ac.addAction(UIAlertAction(title: "Close", style: .cancel))
+        alertController.addAction(UIAlertAction(title: "Close", style: .cancel))
         
         if UIDevice.current.userInterfaceIdiom == .pad {
-            ac.popoverPresentationController?.barButtonItem = sender
+            alertController.popoverPresentationController?.barButtonItem = sender
         }
         
-        return ac
+        return alertController
+    }
+    
+    func createAlertAction(from: Wormholy.ButtonDescriptor, presenter: UIViewController) -> UIAlertAction {
+        
+        var actionBlockFree: Bool = true
+        let actionBlock: () -> Void
+        
+        switch from {
+        case .action(_, _, let handler):
+            actionBlock = { [weak presenter, weak self] in
+                guard actionBlockFree else {
+                    return
+                }
+                
+                actionBlockFree = false
+                
+                if let (isPush, controller) = handler() {
+                    if isPush, let navigationController = self?.navigationController {
+                        navigationController.pushViewController(controller, animated: true)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2/3) {
+                            actionBlockFree = true
+                        }
+                        
+                        
+                    } else if !isPush, let presenter {
+                        presenter.present(controller, animated: true) {
+                            actionBlockFree = true
+                        }
+                        
+                    } else {
+                        actionBlockFree = true
+                    }
+                    
+                } else {
+                    actionBlockFree = true
+                }
+            }
+            
+        case .submenu(let title, _, let children):
+            actionBlock = { [weak presenter] in
+                guard actionBlockFree else {
+                    return
+                }
+                
+                actionBlockFree = false
+                
+                let childAlert = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
+                for child in children {
+                    childAlert.addAction(self.createAlertAction(from: child, presenter: self))
+                }
+                
+                childAlert.addAction(.init(title: "Cancel", style: .cancel))
+                guard let presenter else {
+                    actionBlockFree = true
+                    return
+                }
+                
+                presenter.present(childAlert, animated: true) {
+                    actionBlockFree = true
+                }
+            }
+        }
+        
+        switch from {
+        case .action(var title, let buttonStyle, _), .submenu(var title, let buttonStyle, _):
+            let alertStyle: UIAlertAction.Style
+            if buttonStyle.contains(.destructive) {
+                alertStyle = .destructive
+                
+            } else if buttonStyle.contains(.cancel) {
+                alertStyle = .cancel
+                
+            } else {
+                alertStyle = .default
+            }
+            
+            if buttonStyle.contains(.selected) {
+                title = "→ \(title)"
+            }
+            
+            return UIAlertAction(title: title, style: alertStyle, handler: { _ in
+                actionBlock()
+            })
+        }
     }
     
     func clearRequests() {
@@ -264,5 +336,59 @@ extension UIAlertAction {
                 self.callHandler()
             }
         )
+    }
+}
+
+extension Wormholy.ButtonDescriptor {
+    
+    func toMenuAction(presenter: UIViewController) -> UIMenuElement {
+        var actionBlockFree: Bool = true
+        
+        switch self {
+        case .action(let title, let style, let handler):
+            var attributes: UIMenuElement.Attributes = []
+            if style.contains(.destructive) {
+                attributes.insert(.destructive)
+            }
+            
+            var state: UIMenuElement.State = .init(rawValue: 0)!
+            if style.contains(.selected) {
+                state = .on
+            }
+            
+            return UIAction(title: title, attributes: attributes, state: state) { [weak presenter] action in
+                guard actionBlockFree else { return }
+                actionBlockFree = false
+                
+                if let (isPush, controller) = handler() {
+                    if isPush, let navigationController = presenter?.navigationController {
+                        navigationController.pushViewController(controller, animated: true)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2/3) {
+                            actionBlockFree = true
+                        }
+                        
+                        
+                    } else if !isPush, let presenter {
+                        presenter.present(controller, animated: true) {
+                            actionBlockFree = true
+                        }
+                        
+                    } else {
+                        actionBlockFree = true
+                    }
+                    
+                } else {
+                    actionBlockFree = true
+                }
+            }
+            
+        case .submenu(let title, let style, let children):
+            var options: UIMenu.Options = []
+            if style.contains(.destructive) {
+                options.insert(.destructive)
+            }
+            
+            return UIMenu(title: title, options: options, children: children.map { $0.toMenuAction(presenter: presenter) })
+        }
     }
 }

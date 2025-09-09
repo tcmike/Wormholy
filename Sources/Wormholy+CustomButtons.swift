@@ -8,20 +8,6 @@
 
 import Foundation
 
-///Структура, описывающая кнопку в дополнительном меню вормхоли
-public struct WormholyButtonDescriptor {
-    
-    public let title: String
-    public let style: WormholyPresentationStyle
-    public let block: () -> UIViewController?
-    
-    public init(title: String, style: WormholyPresentationStyle = .push, block: @escaping () -> UIViewController?) {
-        self.title = title
-        self.style = style
-        self.block = block
-    }
-}
-
 public enum WormholyPresentationStyle {
     case push
     case present
@@ -29,13 +15,26 @@ public enum WormholyPresentationStyle {
 
 extension Wormholy {
     
-    static var additionalButtons: [WormholyButtonDescriptor] = []
-    
-    public static func setAdditionalButtons(buttons: [WormholyButtonDescriptor]) {
-        additionalButtons = buttons
+    public struct Style: OptionSet {
+        public let rawValue: UInt8
+        public static let `default` = Style([])
+        public static let destructive = Style(rawValue: 1 << 0)
+        public static let selected = Style(rawValue: 1 << 1)
+        public static let cancel = Style(rawValue: 1 << 2)
+        public init(rawValue: UInt8) {
+            self.rawValue = rawValue
+        }
     }
     
-    public static func adcAdditionalButton(button: WormholyButtonDescriptor) {
-        additionalButtons.append(button)
+    ///Структура, описывающая кнопку в дополнительном меню вормхоли
+    public indirect enum ButtonDescriptor {
+        case action(title: String, style: Style = .default, handler: () -> (isPush: Bool, controller: UIViewController)?)
+        case submenu(title: String, style: Style = .default, children: [ButtonDescriptor])
+    }
+    
+    static var additionalButtonsBlock: () -> [ButtonDescriptor] = { [] }
+    
+    public static func setAdditionalButtons(buttons: @escaping () -> [ButtonDescriptor]) {
+        additionalButtonsBlock = buttons
     }
 }
